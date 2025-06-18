@@ -9,19 +9,23 @@ pipeline {
     }
 
     agent any
-
-    stages {
+     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Manjula-g475/terraform-jenkins.git'
+                script {
+                    dir("terraform")
+                    {
+                       git branch: 'main', url: 'https://github.com/Manjula-g475/terraform-jenkins.git'
+                    }
+                }
             }
         }
 
-        stage('Terraform Init & Plan') {
+        stage('Plan') {
             steps {
-                sh 'terraform init'
-                sh 'terraform plan -out=tfplan'
-                sh 'terraform show -no-color tfplan > tfplan.txt'
+                sh 'pwd;cd terraform/ ; terraform init'
+                sh "pwd;cd terraform/ ; terraform plan -out tfplan"
+                sh 'pwd;cd terraform/ ; terraform show -no-color tfplan > tfplan.txt'
             }
         }
 
@@ -33,18 +37,16 @@ pipeline {
             }
             steps {
                 script {
-                    def planText = readFile('tfplan.txt')
+                    def plan = readFile 'terraform/tfplan.tf'
                     input message: 'Do you want to apply this plan?',
-                    parameters: [
-                        text(name: 'PlanReview', defaultValue: planText, description: 'Terraform Plan')
-                    ]
+                    parameters: [text(name: 'Plan', defaultValue: plan, description: 'Terraform Plan')]
                 }
             }
         }
 
-        stage('Terraform Apply') {
+        stage('Apply') {
             steps {
-                sh 'terraform apply -input=false tfplan'
+                sh "pwd;cd terraform/ ; terraform apply -input=false tfplan"
             }
         }
     }
